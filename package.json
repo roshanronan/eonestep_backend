@@ -4,10 +4,15 @@
   "description": "testing idea",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+     "start": "node index.js",
+     "dev": "nodemon index.js",
+     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "roshan",
   "license": "ISC",
+  "engines": {
+  "node": "18.x"
+  },
   "dependencies": {
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
