@@ -17,12 +17,42 @@ module.exports = {
         allowNull: false,
         unique: true
       },
-      address: {
+     instituteName: {
         type: Sequelize.STRING
       },
-      isApproved: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: false
+      pincode: {
+        type: Sequelize.STRING
+      },
+      town: {
+        type: Sequelize.STRING
+      },
+      city: {
+        type: Sequelize.STRING
+      },
+      state: {
+        type: Sequelize.STRING
+      },
+      country: {
+        type: Sequelize.STRING
+      },
+      phone: {
+        type: Sequelize.STRING
+      },
+      totalCoverArea: {
+        type: Sequelize.STRING
+      },
+      totalComputer: {
+        type: Sequelize.STRING
+      },
+      totalStaff: {
+        type: Sequelize.STRING
+      },
+      status: {
+        type: Sequelize.ENUM('pending', 'approved', 'rejected'),
+      },
+      password: {
+        type: Sequelize.STRING,
+        allowNull: false,
       },
       createdAt: {
         allowNull: false,

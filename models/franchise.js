@@ -5,13 +5,41 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: false
       },
+      instituteName: {
+        type: DataTypes.STRING,
+        allowNull: false
+      },
       email: {
         type: DataTypes.STRING,
         unique: true,
         allowNull: false
       },
-      address: {
-        type: DataTypes.TEXT
+       pincode: {
+        type: DataTypes.STRING
+      },
+       town: {
+        type: DataTypes.STRING
+      },
+       city: {
+        type: DataTypes.STRING
+      },
+       state: {
+        type: DataTypes.STRING
+      },
+       country: {
+        type: DataTypes.STRING
+      },
+       phone: {
+        type: DataTypes.STRING
+      },
+       totalCoverArea: {
+        type: DataTypes.STRING
+      },
+       totalComputer: {
+        type: DataTypes.STRING
+      },
+       totalStaff: {
+        type: DataTypes.STRING
       },
       password: {
         type: DataTypes.STRING

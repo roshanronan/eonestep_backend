@@ -1,20 +1,69 @@
 // models/student.model.js
 module.exports = (sequelize, DataTypes) => {
     const Student = sequelize.define('Student', {
-      name: {
+      studentName: {
         type: DataTypes.STRING,
         allowNull: false,
       },
-      age: {
-        type: DataTypes.INTEGER,
+      courseName: {
+        type: DataTypes.STRING,
+        allowNull: false,
       },
-      course: {
-        type: DataTypes.STRING, // Optional: replace with course_id foreign key
-      },
-      photo_url: {
+      guardianType: {
         type: DataTypes.STRING,
       },
-      franchise_id: {
+      gender: {
+        type: DataTypes.STRING,
+      },
+      fatherName: {
+        type: DataTypes.STRING,
+      },
+      dob: {
+        type: DataTypes.DATEONLY,
+      },
+      pinCode: {
+        type: DataTypes.STRING,
+      },
+      town: {
+        type: DataTypes.STRING,
+      },
+      district: {
+        type: DataTypes.STRING,
+      },
+      state: {
+        type: DataTypes.STRING,
+      },
+      idProof: {
+        type: DataTypes.STRING,
+      },
+      idNumber: {
+        type: DataTypes.STRING,
+      },
+      imageUpload: {
+        type: DataTypes.STRING, // store file path or URL
+      },
+      phone: {
+        type: DataTypes.STRING,
+      },
+      email: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+      },
+      password: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      subjectName: {
+        type: DataTypes.STRING,
+      },
+      selectFromSession: {
+        type: DataTypes.DATEONLY,
+      },
+      selectToSession: {
+        type: DataTypes.DATEONLY,
+      },
+       franchise_id: {
         type: DataTypes.INTEGER,
         allowNull: true,
         references: {
@@ -22,10 +71,6 @@ module.exports = (sequelize, DataTypes) => {
             key: 'id',
           },
           onDelete: 'SET NULL',
-      },
-      course_id: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
       },
     },{
         tableName:'Students'

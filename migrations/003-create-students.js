@@ -9,17 +9,67 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      name: {
-        type: Sequelize.STRING
+      studentName: {
+        type: Sequelize.STRING,
+        allowNull: false,
       },
-      age: {
-        type: Sequelize.INTEGER
+      courseName: {
+        type: Sequelize.STRING,
+        allowNull: false,
       },
-      course: {
-        type: Sequelize.STRING
+      guardianType: {
+        type: Sequelize.STRING,
       },
-      photo_url: {
-        type: Sequelize.STRING
+      gender: {
+        type: Sequelize.STRING,
+      },
+      fatherName: {
+        type: Sequelize.STRING,
+      },
+      dob: {
+        type: Sequelize.DATEONLY,
+      },
+      pinCode: {
+        type: Sequelize.STRING,
+      },
+      town: {
+        type: Sequelize.STRING,
+      },
+      district: {
+        type: Sequelize.STRING,
+      },
+      state: {
+        type: Sequelize.STRING,
+      },
+      idProof: {
+        type: Sequelize.STRING,
+      },
+      idNumber: {
+        type: Sequelize.STRING,
+      },
+      imageUpload: {
+        type: Sequelize.STRING,
+      },
+      phone: {
+        type: Sequelize.STRING,
+      },
+      email: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        unique: true,
+      },
+      password: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      subjectName: {
+        type: Sequelize.STRING,
+      },
+      selectFromSession: {
+        type: Sequelize.DATEONLY,
+      },
+      selectToSession: {
+        type: Sequelize.DATEONLY,
       },
       franchise_id: {
         type: Sequelize.INTEGER,
