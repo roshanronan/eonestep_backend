@@ -28,7 +28,7 @@ async function uploadToFTP(localFilePath, remoteFileName) {
   client.ftp.verbose = true;
   try {
     await client.access({
-      host: "ftp.eonestep.com", // or your Hostinger server IP
+      host: "ftp.eonestep.com", 
       user: process.env.FTP_USER,
       password: process.env.FTP_PASS,
       secure: false,
@@ -37,7 +37,9 @@ async function uploadToFTP(localFilePath, remoteFileName) {
     console.log("Connected to FTP");
 
     // Upload file to /public_html/uploads/
-    const remotePath = `/public_html/uploads/${remoteFileName}`;
+    await client.ensureDir("/home/u262948391/domains/eonestep.com/public_html/uploads");
+
+    const remotePath = `/home/u262948391/domains/eonestep.com/public_html/uploads/${remoteFileName}`;
     await client.uploadFrom(localFilePath, remotePath);
 
     console.log("Uploaded:", remotePath);
