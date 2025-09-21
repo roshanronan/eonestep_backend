@@ -44,7 +44,7 @@ async function uploadToFTP(localFilePath, remoteFileName) {
 
     // console.log("Uploaded:", remotePath);
 
-    return `https://www.eonestep.com/uploads/${remoteFileName}`;
+    return `https://www.eonestep.com/uploads/domains/eonestep.com/public_html/uploads/${remoteFileName}`;
   } catch (err) {
     console.error("FTP Upload failed:", err);
     throw err;
