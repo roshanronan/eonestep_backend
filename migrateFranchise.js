@@ -39,7 +39,7 @@ const newDb =  new Sequelize("eonestep", "root", "root", {
 });
 
 const Franchise = newDb.define(
-  "franchises",
+  "Franchises",
   {
     id: {
       type: DataTypes.INTEGER,
@@ -54,7 +54,7 @@ const Franchise = newDb.define(
     password: DataTypes.STRING,
   },
   {
-    tableName: "franchises",
+    tableName: "Franchises",
     timestamps: false,
     freezeTableName: true,
   }

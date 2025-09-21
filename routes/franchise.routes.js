@@ -59,8 +59,8 @@ router.get('/', auth(['admin']), async (req, res) => {
   SELECT 
     f.*,
     COUNT(s.id) as studentCount
-  FROM franchises f
-  LEFT JOIN students s ON f.id = s.franchise_id
+  FROM Franchises f
+  LEFT JOIN Students s ON f.id = s.franchise_id
   GROUP BY f.id
 `, {
   type: Sequelize.QueryTypes.SELECT

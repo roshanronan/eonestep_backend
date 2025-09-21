@@ -44,12 +44,12 @@ const NewCourse = newDb.define(
 );
 
 const Student = newDb.define(
-  "students",
+  "Students",
   {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     enrollNumber: DataTypes.STRING,
   },
-  { tableName: "students", timestamps: false }
+  { tableName: "Students", timestamps: false }
 );
 
 // -------------------- MIGRATION --------------------

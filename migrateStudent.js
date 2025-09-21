@@ -43,7 +43,7 @@ const newDb = new Sequelize("eonestep", "root", "root", {
 });
 
 const Student = newDb.define(
-  "students",
+  "Students",
   {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     studentName: DataTypes.STRING,
@@ -67,16 +67,16 @@ const Student = newDb.define(
     enrollNumber: DataTypes.STRING,
     rollNumber: DataTypes.STRING,
   },
-  { tableName: "students", timestamps: false }
+  { tableName: "Students", timestamps: false }
 );
 
 const Franchise = newDb.define(
-  "franchises",
+  "Franchises",
   {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     code: DataTypes.STRING,
   },
-  { tableName: "franchises", timestamps: false }
+  { tableName: "Franchises", timestamps: false }
 );
 
 // -------------------- MIGRATION --------------------
