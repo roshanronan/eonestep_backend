@@ -9,6 +9,7 @@ const sendResponse = require('../utils/response');
 const User = db.User;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const sendEmail = require('../utils/sendEmail');
+const resetPasswordTemplate = require('../helper/resetPasswordTemplate');
 
 
 /**
@@ -227,24 +228,13 @@ router.post("/forgot-password", async (req, res) => {
       user.resetPasswordExpires = Date.now() + 1200000; // 20 minutes from now
       await user.save();
       // Send email with reset link (simulated here)
-      const resetLink = `http://localhost:3000/eonestep/reset-password?token=${resetToken}`;
+      const resetLink = `http://localhost:5173/eonestep/reset-password?token=${resetToken}`;
+      console.log("reset LINK",resetLink)
 
-      const message = `
-Hello ${user.name},
+      const {textMessage, htmlMessage} = resetPasswordTemplate(user, resetLink);
 
-Your password has been reset by the admin.
-
-You can now reset your password using:
-Reset Link: ${resetLink}
-
-Please note that this link will expire in 20 minutes.
-If you did not request this change, please contact support immediately.
-
-
-Regards,
-Admin
-    `;
-      await sendEmail(email, "Password Reset", message);
+      const message = textMessage;
+      // await sendEmail(email, "Password Reset", message,htmlMessage);
     }
 
     sendResponse(res, {

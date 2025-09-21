@@ -47,7 +47,20 @@ module.exports = (sequelize, DataTypes) => {
       status: {
         type: DataTypes.ENUM('pending', 'approved', 'rejected'),
         defaultValue: 'pending'
-      }
+      },
+      code: {
+        type: DataTypes.STRING,
+        unique: true
+      },
+       secretarySign: {
+        type: DataTypes.STRING, // store file path or URL
+      },
+       invigilatorSign: {
+        type: DataTypes.STRING, // store file path or URL
+      },
+       examinerSign: {
+        type: DataTypes.STRING, // store file path or URL
+      },
     },{
       tableName:'Franchises'
     });
@@ -56,9 +69,19 @@ module.exports = (sequelize, DataTypes) => {
       Franchise.hasOne(models.User, { foreignKey: 'franchise_id' });
       Franchise.hasMany(models.Student, { foreignKey: 'franchise_id' });
     };
-  
-    
-  
+
+    // Set code after creation
+    Franchise.afterCreate(async (franchise, options) => {
+      if(franchise.id < 10){   
+        franchise.code = `ESA100${franchise.id}`;
+      }else if(franchise.id < 100){
+        franchise.code = `ESA10${franchise.id}`;
+      }else{
+        franchise.code = `ESA1${franchise.id}`;
+      }
+      
+      await franchise.save({ transaction: options.transaction });
+    });
+
     return Franchise;
   };
-  

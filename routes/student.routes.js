@@ -6,9 +6,15 @@ const db = require('../models');
 const auth = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 const upload = require('../middleware/upload');
-const sendResponse = require('../utils/response');
+const sendResponse = require('../utils/response'); 
+const { col, where } = require("sequelize");
+const sequelize = db.sequelize;
+const convertDateRange = require('../helper/FormatHelper');
+ 
 
 const Student = db.Student;
+const Franchise = db.Franchise;
+const Course = db.Course
 
 /**
  * @swagger
@@ -226,7 +232,12 @@ router.get('/all', auth(['admin']), async (req, res) => {
  *                 student:
  *                   $ref: '#/components/schemas/Student'
  */
-  router.post('/register',auth(['franchise']),upload.single('imageUpload'), async (req, res) => {
+ 
+  router.post('/register', auth(['franchise']), upload.single('imageUpload'), async (req, res) => {
+  const transaction = await sequelize.transaction();
+  let studentCreated = false;
+  let newStudent = null;
+  
   try {
     const {
       studentName,
@@ -247,48 +258,177 @@ router.get('/all', auth(['admin']), async (req, res) => {
       subjectName,
       selectFromSession,
       selectToSession,
-      franchise_id // optional, if you want to associate with a franchise
+      franchise_id
     } = req.body;
 
-    const studentExist = await Student.findOne({ where: { email } });
-    if (studentExist) {
-      return sendResponse(res, { status: 409, message: 'Student with this Email already in use' });
-    }
+    // Check if student already exists
+    // const studentExist = await Student.findOne({ 
+    //   where: { email },
+    //   transaction
+    // });
+    
+    // if (studentExist) {
+    //   await transaction.rollback();
+    //   return sendResponse(res, { 
+    //     status: 409, 
+    //     message: 'Student with this Email already in use' 
+    //   });
+    // }
 
-    const imageUpload = req.file ? req.file.filename   : null;
-
-     console.log("Image Path post:", imageUpload,req);
+    const imageUpload = req.file ? req.file.filename : null;
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newStudent = await Student.create({
-      studentName,
-      courseName,
-      guardianType,
-      gender,
-      fatherName,
-      dob,
-      pinCode,
-      town,
-      district,
-      state,
-      idProof, 
-      idNumber,
-      imageUpload,
-      phone,
-      email,
-      password:hashedPassword, // or hashedPassword
-      subjectName,
-      selectFromSession,
-      selectToSession,
-      franchise_id
-    });
+    // Step 1: Create student
+    try {
+      newStudent = await Student.create({
+        studentName,
+        guardianType,
+        gender,
+        fatherName,
+        dob,
+        pinCode,
+        town,
+        district,
+        state,
+        idProof, 
+        idNumber,
+        imageUpload,
+        phone,
+        email,
+        password: hashedPassword,
+        franchise_id
+      }, { transaction });
 
-    res.status(201).json({ message: 'Student application submitted', student: newStudent });
+      studentCreated = true;
+      console.log('✅ Student created successfully:', newStudent.id);
+
+    } catch (studentError) {
+      console.error('❌ Error creating student:', studentError);
+      throw new Error(`Failed to create student: ${studentError.message}`);
+    }
+
+    // Step 2: Create course
+    try {
+      let currentSession = convertDateRange(selectFromSession, selectToSession);
+      
+      const newCourse = await Course.create({
+        courseName,
+        subjects: subjectName,
+        studentId: newStudent.id,
+        courseDuration: currentSession
+      }, { transaction });
+
+      console.log('✅ Course created successfully:', newCourse.id);
+
+      // Commit transaction if both operations succeed
+      await transaction.commit();
+      console.log('✅ Transaction committed successfully');
+
+      res.status(201).json({ 
+        message: 'Student and course created successfully', 
+        student: {
+          id: newStudent.id,
+          studentName: newStudent.studentName,
+          email: newStudent.email,
+          course: {
+            id: newCourse.id,
+            courseName: newCourse.courseName,
+            courseDuration: newCourse.courseDuration
+          }
+        }
+      });
+
+    } catch (courseError) {
+      console.error('❌ Error creating course:', courseError);
+      throw new Error(`Failed to create course: ${courseError.message}`);
+    }
+
   } catch (error) {
-    console.error('Apply Error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    // Rollback transaction
+    await transaction.rollback();
+    
+    if (studentCreated) {
+      console.log(`🔄 Rolled back - Student ${newStudent?.id} and associated data removed`);
+    }
+    
+    console.error('Registration failed - All changes rolled back:', error);
+    
+    res.status(500).json({ 
+      message: 'Registration failed', 
+      error: error.message,
+      rollback: true
+    });
   }
 });
+ 
+//   router.post('/register',auth(['franchise']),upload.single('imageUpload'), async (req, res) => {
+//   try {
+//     const {
+//       studentName,
+//       courseName,
+//       guardianType,
+//       gender,
+//       fatherName,
+//       dob,
+//       pinCode,
+//       town,
+//       district,
+//       state,
+//       idProof,
+//       idNumber,
+//       phone,
+//       email,
+//       password,
+//       subjectName,
+//       selectFromSession,
+//       selectToSession,
+//       franchise_id // optional, if you want to associate with a franchise
+//     } = req.body;
+
+//     const studentExist = await Student.findOne({ where: { email } });
+//     if (studentExist) {
+//       return sendResponse(res, { status: 409, message: 'Student with this Email already in use' });
+//     }
+
+//     const imageUpload = req.file ? req.file.filename   : null;
+
+//     const hashedPassword = await bcrypt.hash(password, 10);
+
+//     const newStudent = await Student.create({
+//       studentName,
+//       guardianType,
+//       gender,
+//       fatherName,
+//       dob,
+//       pinCode,
+//       town,
+//       district,
+//       state,
+//       idProof, 
+//       idNumber,
+//       imageUpload,
+//       phone,
+//       email,
+//       password:hashedPassword,
+//       franchise_id
+//     });
+
+//    let currentSestion = convertDateRange(selectFromSession,selectToSession)
+//    await Course.create({
+//       courseName,
+//       subjects:subjectName,
+//       studentId: newStudent.id,
+//       courseDuration:currentSestion
+//     })
+
+
+
+//     res.status(201).json({ message: 'Student application submitted', student: newStudent });
+//   } catch (error) {
+//     console.error('Apply Error:', error);
+//     res.status(500).json({ message: 'Server error', error: error.message });
+//   }
+// });
 
 
 /**
@@ -407,14 +547,13 @@ router.put('/register/:studentId', auth(['franchise']), upload.single('imageUplo
       selectToSession,
       franchise_id // optional, if you want to associate with a franchise
     } = req.body;
-    const imageUpload = req.file ? req.file.filename  : student.imageUpload;
-    console.log("Image Path:", imageUpload,req.filePath);
+    const imageUpload = req.file ? req.file.filename : student.imageUpload;
+
     // You may want to hash the password before saving
     const hashedPassword = password ? await bcrypt.hash(password, 10) : student.password;
 
     await student.update({
       studentName: studentName || student.studentName,
-      courseName: courseName || student.courseName,
       guardianType: guardianType || student.guardianType,  
       gender:gender || student.gender,
       fatherName:fatherName || student.fatherName,
@@ -429,11 +568,19 @@ router.put('/register/:studentId', auth(['franchise']), upload.single('imageUplo
       phone:phone || student.phone,
       email:email || student.email,
       password:hashedPassword, // or hashedPassword
-      subjectName:subjectName || student.subjectName,
-      selectFromSession:selectFromSession || student.selectFromSession,
-      selectToSession:selectToSession || student.selectToSession,
+      // subjectName:subjectName || student.subjectName,
+      // selectFromSession:selectFromSession || student.selectFromSession,
+      // selectToSession:selectToSession || student.selectToSession,
       franchise_id:franchise_id || student.franchise_id
     });
+
+    const course = Course.findOne({where:{student_id:studentId}})
+    let updateSession = convertDateRange(selectFromSession || student.selectFromSession,selectToSession || student.selectToSession)
+    await course.update({
+       courseName: courseName || course.courseName,
+       subjectName:subjectName || course.subjectName,
+       currentSestion : updateSession
+    })
 
     res.json({ message: 'Student application updated', student });
   } catch (error) {
@@ -442,8 +589,120 @@ router.put('/register/:studentId', auth(['franchise']), upload.single('imageUplo
   }
 }); 
 
-      
-  
-  
+
+
+router.get("/:id/certificate",auth(['franchise']),async(req,res)=>{
+  const studentId = req.params.id
+  try{
+  const student = await Student.findByPk(studentId)
+  if(!student){
+    return sendResponse(res, { status: 404, message: 'Student not found' });
+  }
+
+   sendResponse(res, { status: 200, data: { student } });
+    } catch (error) {
+      console.error('Fetch Student Error:', error);
+      sendResponse(res, { status: 500, message: 'Server error' });
+    }
+})
+
+
+router.post("/certificate", async (req, res) => {
+  const { enrollNumber, rollNumber } = req.body
+  try {
+    const student = await Student.findOne({
+      where: { enrollNumber, rollNumber },
+      attributes: ['id', 'studentName', 'enrollNumber', 'rollNumber', 'fatherName', 'imageUpload', 'district', 'state',
+
+        [col("Franchise.code"), "franchiseCode"],
+        [col("Franchise.city"), "franchiseCity"],
+        [col("Franchise.state"), "franchiseState"],
+        [col("Franchise.instituteName"), "franchiseName"],
+        [col("Courses.grade"), "grade"],
+        [col("Courses.courseName"), "courseName"],
+        [col("Courses.percentage"), "percentage"]
+      ],
+      include: [
+        {
+          model: Franchise,
+          attributes: []
+        },
+        {
+          model: Course,
+          attributes: []
+        }
+      ],
+      raw: true
+    })
+    if (!student) {
+      return sendResponse(res, { status: 404, message: 'Student not found' });
+    }
+
+    sendResponse(res, { status: 200, data: { student } });
+
+  } catch (error) {
+    console.error('Fetch Student Error:', error);
+    sendResponse(res, { status: 500, message: 'Server error' });
+  }
+})
+
+router.get("/:id/course-details", auth(['franchise']), async (req, res) => {
+  const studentId = req.params.id
+  try {
+    const student = await Student.findByPk(studentId, {
+      attributes: ['id', 'studentName', 'fatherName',  'imageUpload', 
+        [col("Courses.grade"), "grade"],
+        [col("Courses.courseName"), "courseName"],
+        [col("Courses.percentage"), "percentage"],
+        [col("Courses.subjects"), "subjects"]
+      ],
+      include: [
+        {
+          model: Course,
+          attributes: []
+        }
+      ],
+      raw: true
+    }
+    )
+    if (!student) {
+      return sendResponse(res, { status: 404, message: 'Student not found' });
+    }
+
+    sendResponse(res, { status: 200, data: { student } });
+  } catch (error) {
+    console.error('Fetch Student Error:', error);
+    sendResponse(res, { status: 500, message: 'Server error' });
+  }
+})
+
+
+router.put("/:id/course-details", auth(['franchise']), async (req, res) => {
+  const studentId = req.params.id
+  const {
+    percentage,
+    grade,
+    courseName,
+    subjects
+  } = req.body
+  try {
+    const course = await Course.findOne({where:{studentId:studentId}})
+    if (!course) {
+      return sendResponse(res, { status: 404, message: 'Course not found' });
+    }
+
+    await course.update({
+      grade:grade || course.grade,
+      percentage : percentage || course.percentage,
+      subjects: subjects || course.subjects,
+      courseName :courseName || course.courseName
+    })
+
+    sendResponse(res, { status: 200, data: { course } });
+  } catch (error) {
+    console.error('Fetch Student Error:', error);
+    sendResponse(res, { status: 500, message: 'Server error' });
+  }
+})
 
 module.exports = router;

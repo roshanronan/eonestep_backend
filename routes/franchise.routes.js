@@ -11,6 +11,10 @@ const User = db.User;
 const sendResponse = require('../utils/response');
 const sequelize = db.sequelize;
 const crypto = require('crypto');
+const franchiseApproveTemplate = require('../helper/franchiseApproveTemplate');
+const Sequelize = require('sequelize');
+const upload = require('../middleware/upload')
+
 
 
 
@@ -51,7 +55,16 @@ const crypto = require('crypto');
 // ✅ GET /api/franchise — Admin sees pending requests
 router.get('/', auth(['admin']), async (req, res) => {
     try {
-      const Franchises = await Franchise.findAll();
+      const Franchises =await sequelize.query(`
+  SELECT 
+    f.*,
+    COUNT(s.id) as studentCount
+  FROM franchises f
+  LEFT JOIN students s ON f.id = s.franchise_id
+  GROUP BY f.id
+`, {
+  type: Sequelize.QueryTypes.SELECT
+});
       const Students = await Student.findAll();
       let approvedFranchises = Franchises.filter(franchise => franchise.status === 'approved').length;
       let pendingFranchises = Franchises.filter(franchise => franchise.status === 'pending').length;
@@ -98,6 +111,22 @@ router.get('/', auth(['admin']), async (req, res) => {
  *         description: Server error
  */
 
+router.get('/:id',auth(['admin','franchise']), async(req,res)=>{
+
+  const {id} = req.params
+
+  try{
+    const franchise = await Franchise.findByPk(id);
+    if (!franchise) {
+      return sendResponse(res, { status: 404, message: "Franchise not found" });
+    }
+   sendResponse(res, { status: 200, data: { franchise } })
+  }catch(error){
+    console.error('Fetch Student Error:', error);
+    sendResponse(res, { status: 500, message: 'Server error' });
+  }
+
+})
 
 // ✅ GET /api/franchise/pending — Admin sees pending requests
 router.get('/pending', auth(['admin']), async (req, res) => {
@@ -223,6 +252,7 @@ router.patch("/:id/approve", auth(["admin"]), async (req, res) => {
     // Generate secure temp password
     const tempPassword = crypto.randomBytes(6).toString("base64"); // ~8 chars
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
+    console.log('temp password',tempPassword)
 
     // Update franchise (partial update → PATCH semantics)
     await franchise.update(
@@ -245,28 +275,15 @@ router.patch("/:id/approve", auth(["admin"]), async (req, res) => {
     // Commit DB changes
     await t.commit();
 
+    const { text, html } = franchiseApproveTemplate(franchise, tempPassword);
     // Send email after commit
-    const message = `
-Hello ${franchise.name},
-
-Your franchise application has been approved!
-
-You can now log in using:
-
-Email: ${franchise.email}
-Temporary Password: ${tempPassword}
-
-Please log in and change your password immediately.
-
-Regards,
-Admin
-    `;
 
     try {
       await sendEmail(
         franchise.email,
         "Franchise Approved – Your Login Credentials",
-        message
+        text,
+        html
       );
     } catch (emailError) {
       console.error("Email sending failed:", emailError);
@@ -365,7 +382,7 @@ router.post('/apply', async (req, res) => {
         sendResponse(res, { status: 400, message: 'Franchise with email already registered' });
       }
   
-      // const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await bcrypt.hash('Password@123', 10);
   
       const newFranchise = await Franchise.create({
         name,
@@ -380,7 +397,7 @@ router.post('/apply', async (req, res) => {
         totalCoverArea,
         totalComputer,
         totalStaff,
-        // password: hashedPassword,
+        password: hashedPassword,
         status: 'pending'
       });
       
@@ -391,5 +408,222 @@ router.post('/apply', async (req, res) => {
       res.status(500).json({ message: 'Server error' });
     }
   });
+
+// router.put('/:id/edit',auth(['admin','franchise']),upload.single('secretarySign'),upload.single('invigilatorSign'),upload.single('examinerSign'),async(req,res)=>{
+//   const {id} = req.params
+//     try {
+//   const franchise = await Franchise.findByPk(id)
+//   if(!franchise){
+//     return sendResponse(res, { status: 400, message: 'Franchise not found.' });
+//   }
+//   if (franchise.id !== req.user.franchiseId) {
+//       return res.status(403).json({ message: 'Access denied' });
+//     }
+//    const {
+//       name,
+//       email,
+//       instituteName,
+//       pincode,
+//       town,
+//       city,
+//       state,
+//       country,
+//       phone,
+//       totalCoverArea,
+//       totalComputer,
+//       totalStaff,
+//     } = req.body;
+//     const secretarySign =  req.file ? req.file.filename : franchise.secretarySign;
+//     const invigilatorSign =  req.file ? req.file.filename : franchise.invigilatorSign;
+//     const examinerSign =  req.file ? req.file.filename : franchise.examinerSign;
+  
+//     if (!name || !email || !instituteName ) {
+//       return res.status(400).json({ message: 'Name, Institute Name, and Email are required' });
+//     }
+//       await franchise.update({
+//       name:name || franchise.name,
+//       email :email || franchise.email,
+//       instituteName:instituteName || franchise.instituteName,
+//       pincode:pincode || franchise.pincode,
+//       town : town || franchise.town,
+//       city : city || franchise.city,
+//       state : state || franchise.state,
+//       country : country || franchise.country,
+//       phone : country || franchise.phone,
+//       totalCoverArea : totalCoverArea || franchise.totalCoverArea,
+//       totalComputer : totalComputer || franchise.totalComputer,
+//       totalStaff : totalStaff || franchise.totalStaff,
+//       secretarySign : secretarySign || franchise.secretarySign,
+//       invigilatorSign : invigilatorSign || franchise.invigilatorSign,
+//       examinerSign : examinerSign || franchise.examinerSign
+//         })
+//   sendResponse(res, { status: 200, data: { franchise } })
+//     }catch(error){
+//      console.error('Fetch Student Error:', error);
+//     sendResponse(res, { status: 500, message: 'Server error' });
+//     }
+
+// })
+
+router.put('/:id/edit', 
+    auth(['admin','franchise']), 
+    upload.fields([
+      { name: 'secretarySign', maxCount: 1 },
+      { name: 'invigilatorSign', maxCount: 1 },
+      { name: 'examinerSign', maxCount: 1 }
+    ]), 
+    async (req, res) => {
+        const { id } = req.params;
+
+        try {
+            const franchise = await Franchise.findByPk(id);
+
+            if (!franchise) {
+                return sendResponse(res, { status: 400, message: 'Franchise not found.' });
+            }
+
+            // Note: If you need to restrict access based on user's franchiseId,
+            // this check is fine, but consider if it's already handled by auth middleware.
+            if (req.user.role === 'franchise' && franchise.id !== req.user.franchiseId) {
+                return res.status(403).json({ message: 'Access denied' });
+            }
+            
+            const {
+                name,
+                email,
+                instituteName,
+                pincode,
+                town,
+                city,
+                state,
+                country,
+                phone,
+                totalCoverArea,
+                totalComputer,
+                totalStaff,
+            } = req.body;
+
+            // Use req.files to access multiple files
+            const secretarySign = req.files && req.files['secretarySign'] ? req.files['secretarySign'][0].filename : franchise.secretarySign;
+            const invigilatorSign = req.files && req.files['invigilatorSign'] ? req.files['invigilatorSign'][0].filename : franchise.invigilatorSign;
+            const examinerSign = req.files && req.files['examinerSign'] ? req.files['examinerSign'][0].filename : franchise.examinerSign;
+        
+            if (!name || !email || !instituteName) {
+                return res.status(400).json({ message: 'Name, Institute Name, and Email are required' });
+            }
+
+            await franchise.update({
+                name: name || franchise.name,
+                email: email || franchise.email,
+                instituteName: instituteName || franchise.instituteName,
+                pincode: pincode || franchise.pincode,
+                town: town || franchise.town,
+                city: city || franchise.city,
+                state: state || franchise.state,
+                country: country || franchise.country,
+                phone: phone || franchise.phone, // Corrected typo
+                totalCoverArea: totalCoverArea || franchise.totalCoverArea,
+                totalComputer: totalComputer || franchise.totalComputer,
+                totalStaff: totalStaff || franchise.totalStaff,
+                secretarySign,
+                invigilatorSign,
+                examinerSign,
+            });
+
+            sendResponse(res, { status: 200, data: { franchise } });
+
+        } catch (error) { // Fixed catch block
+            console.error('Update Franchise Error:', error);
+            sendResponse(res, { status: 500, message: 'Server error' });
+        }
+    });
+
+router.patch("/:id/hard-password-reset", auth(["admin"]), async (req, res)=>{
+  const franchiseId = req.params.id
+  const password = req.body.password
+  const t = await sequelize.transaction()
+
+  try{
+
+    const franchise = await Franchise.findByPk(franchiseId,{transaction:t}) 
+    if(!franchise){
+     await t.rollback();
+      return sendResponse(res, { status: 404, message: "Franchise not found" });
+    }
+
+    const user = await User.findOne({where : {email:franchise.email}})
+
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await franchise.update(
+      { password: hashedPassword },
+      { transaction: t }
+    );
+    await user.update(
+       { password: hashedPassword },
+      { transaction: t }
+    )
+
+   await t.commit()
+
+    return sendResponse(res, {
+      status: 200,
+      message: "Franchise passoword reseted.",
+    });
+  } catch (error) {
+    await t.rollback();
+    console.error("Reset Error:", error);
+    return sendResponse(res, { status: 500, message: "Server error" });
+  }
+})
+
+router.patch("/:id/suspend", auth(["admin"]), async (req, res) => {
+  const franchiseId = req.params.id
+  const t = await sequelize.transaction()
+
+  try {
+
+    const franchise = await Franchise.findByPk(franchiseId, { transaction: t })
+    if (!franchise) {
+      await t.rollback();
+      return sendResponse(res, { status: 404, message: "Franchise not found" });
+    }
+
+    if (franchise.status == 'approved') {
+      await franchise.update(
+        { status: 'rejected' },
+        { transaction: t }
+      );
+      await t.commit()
+
+      return sendResponse(res, {
+        status: 200,
+        message: "Franchise suspended.",
+      });
+    } else if (franchise.status == 'rejected') {
+      await franchise.update(
+        { status: 'approved' },
+        { transaction: t }
+      );
+      await t.commit()
+
+      return sendResponse(res, {
+        status: 200,
+        message: "Franchise Activated.",
+      });
+    } else {
+      await t.rollback();
+      return sendResponse(res, {
+        status: 200,
+        message: "Franchise approval is pending.",
+      });
+    }
+  } catch (error) {
+    await t.rollback();
+    console.error("Suspened Error:", error);
+    return sendResponse(res, { status: 500, message: "Server error" });
+  }
+})
 
 module.exports = router;

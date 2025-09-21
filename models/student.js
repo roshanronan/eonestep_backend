@@ -5,10 +5,9 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: false,
       },
-      courseName: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
+      // courseName: {
+      //   type: DataTypes.STRING,
+      // },
       guardianType: {
         type: DataTypes.STRING,
       },
@@ -46,17 +45,14 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
       },
       email: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true,
-      },
+    type: DataTypes.STRING
+      },  
       password: {
         type: DataTypes.STRING,
-        allowNull: false,
       },
-      subjectName: {
-        type: DataTypes.STRING,
-      },
+      // subjectName: {
+      //   type: DataTypes.STRING,
+      // },
       selectFromSession: {
         type: DataTypes.DATEONLY,
       },
@@ -72,13 +68,46 @@ module.exports = (sequelize, DataTypes) => {
           },
           onDelete: 'SET NULL',
       },
+      status: {
+        type: DataTypes.ENUM('active', 'inactive'),
+        defaultValue: 'active',
+      },  
+      enrollNumber: {
+        type: DataTypes.STRING,
+        unique: true, 
+      },
+      rollNumber: {
+        type: DataTypes.STRING,
+        unique: true,     
+      }
     },{
         tableName:'Students'
     });
 
     Student.associate =(models)=>{
         Student.belongsTo(models.Franchise, { foreignKey: 'franchise_id' });
+        Student.hasMany(models.Course, { foreignKey: "studentId" });
     }
+    
+
+      Student.afterCreate(async (student, options) => {
+      if(student.id < 10){   
+        stidemt.enrollNumber = `ES2021ESA000${student.id}`;
+        student.rollNumber = `ESA000${student.id}`;
+      }else if(student.id < 100){
+        student.enrollNumber = `ES2021ESA00${student.id}`;
+        student.rollNumber = `ESA00${student.id}`;
+      }else if(student.id < 1000){
+        student.enrollNumber = `ES2021ESA0${student.id}`;
+        student.rollNumber = `ESA0${student.id}`;
+      }else{
+        student.enrollNumber = `ES2021ESA${student.id}`;
+        student.rollNumber = `ESA${student.id}`;
+      }
+      
+      await student.save({ transaction: options.transaction });
+    });
+
     return Student;
   };
   
