@@ -34,15 +34,15 @@ async function uploadToFTP(localFilePath, remoteFileName) {
       secure: false,
     });
 
-    console.log("Connected to FTP");
+    // console.log("Connected to FTP");
 
     // Upload file to /public_html/uploads/
-    await client.ensureDir("/home/u262948391/domains/eonestep.com/public_html/uploads");
+   await client.ensureDir("/domains/eonestep.com/public_html/uploads");
 
-    const remotePath = `/home/u262948391/domains/eonestep.com/public_html/uploads/${remoteFileName}`;
+    const remotePath = `/domains/eonestep.com/public_html/uploads/${remoteFileName}`;
     await client.uploadFrom(localFilePath, remotePath);
 
-    console.log("Uploaded:", remotePath);
+    // console.log("Uploaded:", remotePath);
 
     return `https://www.eonestep.com/uploads/${remoteFileName}`;
   } catch (err) {
