@@ -15,10 +15,10 @@ app.use(bodyParser.json());
 app.use(errorHandler)
 
 // Swagger Docs Route
-app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerSpec));
+// app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerSpec));
 app.use(logger);
 
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes
 app.use('/api/auth', require('./routes/auth.routes'));
@@ -26,7 +26,7 @@ app.use('/api/franchise', require('./routes/franchise.routes'));
 app.use('/api/students', require('./routes/student.routes'));
 
 app.get('/', (req, res) => {
-    res.send('Server is running...');
+   res.redirect('https://eonestep.com');
   });
 
 // Sync DB and start server

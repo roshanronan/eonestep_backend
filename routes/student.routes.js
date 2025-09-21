@@ -5,7 +5,7 @@ const router = express.Router();
 const db = require('../models');
 const auth = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
-const upload = require('../middleware/upload');
+const {upload,uploadToFTP} = require('../middleware/upload');
 const sendResponse = require('../utils/response'); 
 const { col, where } = require("sequelize");
 const sequelize = db.sequelize;
@@ -275,7 +275,15 @@ router.get('/all', auth(['admin']), async (req, res) => {
     //   });
     // }
 
-    const imageUpload = req.file ? req.file.filename : null;
+     let imageUpload = null;
+
+
+      if (req.files["imageUpload"]) {
+        const file = req.files["imageUpload"][0];
+        imageUpload = await uploadToFTP(file.path, file.filename);
+      }
+
+    // const imageUpload = req.file ? req.file.filename : null;
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Step 1: Create student
@@ -547,7 +555,14 @@ router.put('/register/:studentId', auth(['franchise']), upload.single('imageUplo
       selectToSession,
       franchise_id // optional, if you want to associate with a franchise
     } = req.body;
-    const imageUpload = req.file ? req.file.filename : student.imageUpload;
+    // const imageUpload = req.file ? req.file.filename : student.imageUpload;
+
+     let imageUpload = null;
+
+      if (req.files["imageUpload"]) {
+        const file = req.files["imageUpload"][0];
+        imageUpload = await uploadToFTP(file.path, file.filename);
+      }
 
     // You may want to hash the password before saving
     const hashedPassword = password ? await bcrypt.hash(password, 10) : student.password;
@@ -564,7 +579,7 @@ router.put('/register/:studentId', auth(['franchise']), upload.single('imageUplo
       state:state || student.state,
       idProof:idProof || student.idProof, 
       idNumber:idNumber || student.idNumber,
-      imageUpload:imageUpload,
+      imageUpload:imageUpload || student.imageUpload,
       phone:phone || student.phone,
       email:email || student.email,
       password:hashedPassword, // or hashedPassword

@@ -13,7 +13,7 @@ const sequelize = db.sequelize;
 const crypto = require('crypto');
 const franchiseApproveTemplate = require('../helper/franchiseApproveTemplate');
 const Sequelize = require('sequelize');
-const upload = require('../middleware/upload')
+const {upload , uploadToFTP} = require('../middleware/upload')
 
 
 
@@ -355,7 +355,12 @@ router.patch("/:id/approve", auth(["admin"]), async (req, res) => {
 
 // ✅ POST /api/franchise/apply — Public franchise application
 
-router.post('/apply', async (req, res) => {
+router.post('/apply',    upload.fields([
+      { name: 'secretarySign', maxCount: 1 },
+      { name: 'invigilatorSign', maxCount: 1 },
+      { name: 'examinerSign', maxCount: 1 }
+    ]), 
+     async (req, res) => {
     const {
       name,
       email,
@@ -370,7 +375,9 @@ router.post('/apply', async (req, res) => {
       totalComputer,
       totalStaff,
     } = req.body;
-  
+
+
+
     if (!name || !email || !instituteName ) {
       return res.status(400).json({ message: 'Name, Institute Name, and Email are required' });
     }
@@ -382,7 +389,26 @@ router.post('/apply', async (req, res) => {
         sendResponse(res, { status: 400, message: 'Franchise with email already registered' });
       }
   
-      const hashedPassword = await bcrypt.hash('Password@123', 10);
+      const hashedPassword = await bcrypt.hash('8dfhskg@#%$234', 10);
+
+      let secretarySignUrl = null;
+      let invigilatorSignUrl = null;
+      let examinerSignUrl = null;
+
+      if (req.files["secretarySign"]) {
+        const file = req.files["secretarySign"][0];
+        secretarySignUrl = await uploadToFTP(file.path, file.filename);
+      }
+
+      if (req.files["invigilatorSign"]) {
+        const file = req.files["invigilatorSign"][0];
+        invigilatorSignUrl = await uploadToFTP(file.path, file.filename);
+      }
+
+      if (req.files["examinerSign"]) {
+        const file = req.files["examinerSign"][0];
+        examinerSignUrl = await uploadToFTP(file.path, file.filename);
+      }
   
       const newFranchise = await Franchise.create({
         name,
@@ -398,7 +424,11 @@ router.post('/apply', async (req, res) => {
         totalComputer,
         totalStaff,
         password: hashedPassword,
-        status: 'pending'
+        status: 'pending',
+        secretarySign: secretarySignUrl, 
+        invigilatorSign: invigilatorSignUrl,
+        examinerSign: examinerSignUrl,
+
       });
       
       sendResponse(res, { status: 201, message: 'Franchise application submitted', data: { franchise: newFranchise } });
@@ -504,10 +534,24 @@ router.put('/:id/edit',
             } = req.body;
 
             // Use req.files to access multiple files
-            const secretarySign = req.files && req.files['secretarySign'] ? req.files['secretarySign'][0].filename : franchise.secretarySign;
-            const invigilatorSign = req.files && req.files['invigilatorSign'] ? req.files['invigilatorSign'][0].filename : franchise.invigilatorSign;
-            const examinerSign = req.files && req.files['examinerSign'] ? req.files['examinerSign'][0].filename : franchise.examinerSign;
-        
+                  let secretarySignUrl = null;
+      let invigilatorSignUrl = null;
+      let examinerSignUrl = null;
+
+      if (req.files["secretarySign"]) {
+        const file = req.files["secretarySign"][0];
+        secretarySignUrl = await uploadToFTP(file.path, file.filename);
+      }
+
+      if (req.files["invigilatorSign"]) {
+        const file = req.files["invigilatorSign"][0];
+        invigilatorSignUrl = await uploadToFTP(file.path, file.filename);
+      }
+
+      if (req.files["examinerSign"]) {
+        const file = req.files["examinerSign"][0];
+        examinerSignUrl = await uploadToFTP(file.path, file.filename);
+      }
             if (!name || !email || !instituteName) {
                 return res.status(400).json({ message: 'Name, Institute Name, and Email are required' });
             }
@@ -525,9 +569,9 @@ router.put('/:id/edit',
                 totalCoverArea: totalCoverArea || franchise.totalCoverArea,
                 totalComputer: totalComputer || franchise.totalComputer,
                 totalStaff: totalStaff || franchise.totalStaff,
-                secretarySign,
-                invigilatorSign,
-                examinerSign,
+                secretarySign : secretarySignUrl || franchise.secretarySign,
+                invigilatorSign : invigilatorSignUrl || franchise.invigilatorSign,
+                examinerSign :examinerSignUrl || franchise.examinerSign,
             });
 
             sendResponse(res, { status: 200, data: { franchise } });
