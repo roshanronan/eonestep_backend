@@ -15,7 +15,7 @@ app.use(bodyParser.json());
 app.use(errorHandler)
 
 // Swagger Docs Route
-// app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerSpec));
+app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerSpec));
 app.use(logger);
 
 // app.use("/uploads", express.static(path.join(__dirname, "uploads")));
