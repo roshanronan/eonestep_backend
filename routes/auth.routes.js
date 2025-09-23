@@ -51,7 +51,7 @@ router.post('/login', async (req, res) => {
       // return res.status(404).json({ message: 'User not found' });
       return sendResponse(res, { status: 404, message: 'User not found' });
     }
-    if( user.Franchise.status == 'rejected'){
+    if( user.role != 'admin' && user.Franchise.status == 'rejected'){
        return sendResponse(res, { status: 404, message: 'Account has been suspended.' });
     } 
 
