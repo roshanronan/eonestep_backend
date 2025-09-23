@@ -130,7 +130,10 @@ router.get('/:studentId', auth(['franchise', 'admin']), async (req, res) => {
         where: {
           ...(req.user.role === 'franchise' && { franchise_id: req.user.franchiseId })
         },
-        // include: db.Course // optional: include course details if using course_id
+      include:[{
+        model: db.Course,
+        attributes: ['courseName','subjects','courseDuration'] // Specify the attribute you want to include
+    }]
       });
       if (!student) {
         return sendResponse(res, { status: 404, message: 'Student not found' });
@@ -262,24 +265,27 @@ router.get('/all', auth(['admin']), async (req, res) => {
     } = req.body;
 
     // Check if student already exists
-    // const studentExist = await Student.findOne({ 
-    //   where: { email },
-    //   transaction
-    // });
+    const studentExist = await Student.findOne({ 
+      where: { email },
+      transaction
+    });
     
-    // if (studentExist) {
-    //   await transaction.rollback();
-    //   return sendResponse(res, { 
-    //     status: 409, 
-    //     message: 'Student with this Email already in use' 
-    //   });
-    // }
+    if (studentExist) {
+      const studentCourse = await Course.findOne({where:{studentId:studentExist.id}})
+      if(studentCourse){
+      await transaction.rollback();
+      return sendResponse(res, { 
+        status: 409, 
+        message: 'Student is already enrolled in the course.' 
+      });}
+    }
 
      let imageUpload = null;
 
 
-      if (req.files["imageUpload"]) {
-        const file = req.files["imageUpload"][0];
+
+      if (req.file) {
+        const file =  req.file;
         imageUpload = await uploadToFTP(file.path, file.filename);
       }
 
@@ -304,7 +310,9 @@ router.get('/all', auth(['admin']), async (req, res) => {
         phone,
         email,
         password: hashedPassword,
-        franchise_id
+        franchise_id,
+        selectFromSession,
+        selectToSession
       }, { transaction });
 
       studentCreated = true;
@@ -557,10 +565,10 @@ router.put('/register/:studentId', auth(['franchise']), upload.single('imageUplo
     } = req.body;
     // const imageUpload = req.file ? req.file.filename : student.imageUpload;
 
-     let imageUpload = null;
+     let imageUpload = null
 
-      if (req.files["imageUpload"]) {
-        const file = req.files["imageUpload"][0];
+       if (req.file) {
+        const file =  req.file;
         imageUpload = await uploadToFTP(file.path, file.filename);
       }
 
@@ -584,17 +592,17 @@ router.put('/register/:studentId', auth(['franchise']), upload.single('imageUplo
       email:email || student.email,
       password:hashedPassword, // or hashedPassword
       // subjectName:subjectName || student.subjectName,
-      // selectFromSession:selectFromSession || student.selectFromSession,
-      // selectToSession:selectToSession || student.selectToSession,
+      selectFromSession:selectFromSession || student.selectFromSession,
+      selectToSession:selectToSession || student.selectToSession,
       franchise_id:franchise_id || student.franchise_id
     });
 
-    const course = Course.findOne({where:{student_id:studentId}})
+    const course = await Course.findOne({where:{studentId:studentId}})
     let updateSession = convertDateRange(selectFromSession || student.selectFromSession,selectToSession || student.selectToSession)
     await course.update({
        courseName: courseName || course.courseName,
        subjectName:subjectName || course.subjectName,
-       currentSestion : updateSession
+       courseDuration : updateSession
     })
 
     res.json({ message: 'Student application updated', student });
@@ -632,10 +640,14 @@ router.post("/certificate", async (req, res) => {
         [col("Franchise.code"), "franchiseCode"],
         [col("Franchise.city"), "franchiseCity"],
         [col("Franchise.state"), "franchiseState"],
+        [col("Franchise.secretarySign"), "franchiseSecretarySign"],
+        [col("Franchise.invigilatorSign"), "franchiseInvigilatorSign"],
+        [col("Franchise.examinerSign"), "franchiseExaminerSign"],
         [col("Franchise.instituteName"), "franchiseName"],
         [col("Courses.grade"), "grade"],
         [col("Courses.courseName"), "courseName"],
-        [col("Courses.percentage"), "percentage"]
+        [col("Courses.percentage"), "percentage"],
+        [col("Courses.courseDuration"), "courseDuration"]
       ],
       include: [
         {
@@ -669,7 +681,8 @@ router.get("/:id/course-details", auth(['franchise']), async (req, res) => {
         [col("Courses.grade"), "grade"],
         [col("Courses.courseName"), "courseName"],
         [col("Courses.percentage"), "percentage"],
-        [col("Courses.subjects"), "subjects"]
+        [col("Courses.subjects"), "subjects"],
+        [col("Courses.courseDuration"), "courseDuration"]
       ],
       include: [
         {

@@ -51,12 +51,17 @@ router.post('/login', async (req, res) => {
       // return res.status(404).json({ message: 'User not found' });
       return sendResponse(res, { status: 404, message: 'User not found' });
     }
+    if( user.Franchise.status == 'rejected'){
+       return sendResponse(res, { status: 404, message: 'Account has been suspended.' });
+    } 
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
       // return res.status(401).json({ message: 'Invalid credentials' });
       return sendResponse(res, { status: 401, message: 'Invalid credentials' });
     }
+
+    
 
     const payload = {
       id: user.id,
@@ -66,17 +71,6 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '5h' });
 
-    // res.json({
-    //     token,
-    //     user: {
-    //       id: user.id,
-    //       email: user.email,
-    //       role: user.role,
-    //       franchiseId: user.franchise_id,
-    //       franchiseName: user.Franchise?.name || null,
-    //       mustChangePassword: user.must_change_password // ✅ frontend can redirect
-    //     },
-    //   });
       
     sendResponse(res, { status: 200, message: 'Login successful', data: {
         token,
