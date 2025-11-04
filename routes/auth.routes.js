@@ -222,13 +222,13 @@ router.post("/forgot-password", async (req, res) => {
       user.resetPasswordExpires = Date.now() + 1200000; // 20 minutes from now
       await user.save();
       // Send email with reset link (simulated here)
-      const resetLink = `http://localhost:5173/eonestep/reset-password?token=${resetToken}`;
-      console.log("reset LINK",resetLink)
+      const resetLink = `https://eonestep.netlify.app/reset-password?token=${resetToken}`;
+      // console.log("reset LINK",resetLink)
 
       const {textMessage, htmlMessage} = resetPasswordTemplate(user, resetLink);
 
       const message = textMessage;
-      // await sendEmail(email, "Password Reset", message,htmlMessage);
+      await sendEmail(email, "Password Reset", message,htmlMessage);
     }
 
     sendResponse(res, {

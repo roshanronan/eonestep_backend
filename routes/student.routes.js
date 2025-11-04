@@ -10,11 +10,27 @@ const sendResponse = require('../utils/response');
 const { col, where } = require("sequelize");
 const sequelize = db.sequelize;
 const convertDateRange = require('../helper/FormatHelper');
+const { raw } = require('mysql2');
+
  
 
 const Student = db.Student;
 const Franchise = db.Franchise;
 const Course = db.Course
+
+router.get("/certificate-request",auth(['admin']),async(req,res)=>{
+  try{
+const students = await Student.findAll({where:{status:'requested'},
+ include: [
+          { model: db.Franchise, attributes: ['instituteName'] },
+        ]
+})
+    return sendResponse(res,{status:200,data:{students}})
+  }catch(error){
+ console.error('Fetch Student Error:', error);
+    sendResponse(res, { status: 500, message: 'Server error' });
+  }
+})
 
 /**
  * @swagger
@@ -284,10 +300,10 @@ router.get('/all', auth(['admin']), async (req, res) => {
 
 
 
-      if (req.file) {
-        const file =  req.file;
-        imageUpload = await uploadToFTP(file.path, file.filename);
-      }
+        if (req.file) {
+          const file =  req.file;
+          imageUpload = await uploadToFTP(file.path, file.filename);
+        }
 
     // const imageUpload = req.file ? req.file.filename : null;
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -316,7 +332,7 @@ router.get('/all', auth(['admin']), async (req, res) => {
       }, { transaction });
 
       studentCreated = true;
-      console.log('✅ Student created successfully:', newStudent.id);
+      // console.log('✅ Student created successfully:', newStudent.id);
 
     } catch (studentError) {
       console.error('❌ Error creating student:', studentError);
@@ -334,11 +350,11 @@ router.get('/all', auth(['admin']), async (req, res) => {
         courseDuration: currentSession
       }, { transaction });
 
-      console.log('✅ Course created successfully:', newCourse.id);
+      // console.log('✅ Course created successfully:', newCourse.id);
 
       // Commit transaction if both operations succeed
       await transaction.commit();
-      console.log('✅ Transaction committed successfully');
+      // console.log('✅ Transaction committed successfully');
 
       res.status(201).json({ 
         message: 'Student and course created successfully', 
@@ -621,7 +637,6 @@ router.get("/:id/certificate",auth(['franchise']),async(req,res)=>{
   if(!student){
     return sendResponse(res, { status: 404, message: 'Student not found' });
   }
-
    sendResponse(res, { status: 200, data: { student } });
     } catch (error) {
       console.error('Fetch Student Error:', error);
@@ -635,7 +650,7 @@ router.post("/certificate", async (req, res) => {
   try {
     const student = await Student.findOne({
       where: { enrollNumber, rollNumber },
-      attributes: ['id', 'studentName', 'enrollNumber', 'rollNumber', 'fatherName', 'imageUpload', 'district', 'state',
+      attributes: ['id', 'studentName', 'enrollNumber', 'rollNumber', 'fatherName', 'imageUpload', 'district', 'state','status',
 
         [col("Franchise.code"), "franchiseCode"],
         [col("Franchise.city"), "franchiseCity"],
@@ -662,7 +677,15 @@ router.post("/certificate", async (req, res) => {
       raw: true
     })
     if (!student) {
-      return sendResponse(res, { status: 404, message: 'Student not found' });
+      return sendResponse(res, { status: 404, message: 'Student not found.' });
+    }
+
+    if(student.status === 'active'){
+      return sendResponse(res, { status: 400, message: 'Student certificate can not be created before result.' });
+    }
+
+     if(student.status === 'requested'){
+      return sendResponse(res, { status: 400, message: 'Student certificate is under process.' });
     }
 
     sendResponse(res, { status: 200, data: { student } });
@@ -732,5 +755,42 @@ router.put("/:id/course-details", auth(['franchise']), async (req, res) => {
     sendResponse(res, { status: 500, message: 'Server error' });
   }
 })
+
+
+
+router.put("/certificate-request/:id",auth(['admin','franchise']),async(req,res)=>{
+
+  const studentId = req.params.id;
+  const {status} = req.body
+
+  try{
+          const student = await Student.findByPk(studentId)
+      if(!student){
+        return sendResponse(res,{status:404,message:'Student not found'})
+      }
+    if(req.user.role === 'franchise'){
+      if(student.status === 'requested'){
+         return sendResponse(res,{status:400,message:'Certificate already requested.'})
+      }else if(student.status === 'inactive'){
+         return sendResponse(res,{status:400,message:'Certificate already issued.'})
+      }else if(student.status === 'active'){
+        await student.update({status:'requested'})
+         return sendResponse(res,{status:200,message:'Certificate request submitted successfully.',data:{student}})
+      }
+    }else if(req.user.role === 'admin'){
+      if(student.status === 'inactive'){
+         return sendResponse(res,{status:400,message:'Certificate already issued.'})
+      } else if(student.status === 'requested'){
+        await student.update({status:'inactive'})
+         return sendResponse(res,{status:200,message:'Certificate issued successfully.',data:{student}})
+      }
+    }
+
+  }catch(err){
+    console.error('Fetch Student Error:', err);
+    sendResponse(res, { status: 500, message: 'Server error' });
+  }
+}
+)
 
 module.exports = router;

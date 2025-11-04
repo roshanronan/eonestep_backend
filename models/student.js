@@ -69,8 +69,8 @@ module.exports = (sequelize, DataTypes) => {
           onDelete: 'SET NULL',
       },
       status: {
-        type: DataTypes.ENUM('active', 'inactive'),
-        defaultValue: 'active',
+        type: DataTypes.ENUM('active', 'inactive','requested'),
+        defaultValue: 'inactive',
       },  
       enrollNumber: {
         type: DataTypes.STRING,

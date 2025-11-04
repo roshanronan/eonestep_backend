@@ -32,7 +32,7 @@ Admin
             <!-- Header with Logo -->
             <tr>
               <td style="background:#007bff; padding:20px; text-align:center;">
-                <img src="http://localhost:5173/eonestep/src/assets/logo.png" alt="Logo" width="120" style="display:block; margin:0 auto;" />
+                <img src="https://eonestep.netlify.app/assets/logo-CPHpHGxE.png" alt="Logo" width="80" style="display:block; margin:0 auto;" />
               </td>
             </tr>
 

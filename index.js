@@ -24,6 +24,9 @@ app.use(logger);
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/franchise', require('./routes/franchise.routes'));
 app.use('/api/students', require('./routes/student.routes'));
+app.use('/api/instructors', require('./routes/instructor.routes'));
+app.use('/api/livecourses', require('./routes/livecourse.routes'));
+app.use('/api/livestudents', require('./routes/livestudent.routes'));
 
 app.get('/', (req, res) => {
    res.redirect('https://eonestep.com');
