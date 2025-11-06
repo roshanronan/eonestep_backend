@@ -212,7 +212,7 @@ router.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
 
   try {
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({ where: { email },include: db.Franchise });
     if (user) {
       // Generate a reset token (in a real app, use a secure random token)
       const resetToken = jwt.sign({ id: user.id }, JWT_SECRET, {
@@ -223,12 +223,11 @@ router.post("/forgot-password", async (req, res) => {
       await user.save();
       // Send email with reset link (simulated here)
       const resetLink = `https://eonestep.netlify.app/reset-password?token=${resetToken}`;
-      // console.log("reset LINK",resetLink)
 
       const {textMessage, htmlMessage} = resetPasswordTemplate(user, resetLink);
+  
 
-      const message = textMessage;
-      await sendEmail(email, "Password Reset", message,htmlMessage);
+      await sendEmail(email, "Password Reset", textMessage,htmlMessage);
     }
 
     sendResponse(res, {
