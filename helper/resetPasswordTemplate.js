@@ -31,9 +31,11 @@ Admin
             
             <!-- Header with Logo -->
             <tr>
-              <td style="background:#4da3ff; padding:20px; text-align:center;">
-                <img src="https://eonestep.netlify.app/assets/logo-CPHpHGxE.png" alt="Logo" width="120" style="display:block; margin:0 auto;" />
+               <td style="background:#fff; padding:20px; text-align:center;">
+                <img src="https://eonestep.netlify.app/assets/logo-CPHpHGxE.png" alt="EoneStep" width="120" style="display:block; margin:0 auto;" />
+                <h1>Eonestep Academy</h1>
               </td>
+              <hr/>
             </tr>
 
             <!-- Content -->

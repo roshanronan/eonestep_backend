@@ -12,6 +12,7 @@ const sendResponse = require('../utils/response');
 const sequelize = db.sequelize;
 const crypto = require('crypto');
 const franchiseApproveTemplate = require('../helper/franchiseApproveTemplate');
+const hardPasswordResetTemplate = require('../helper/hardPasswordResetTemplate')
 const Sequelize = require('sequelize');
 const {upload , uploadToFTP} = require('../middleware/upload')
 
@@ -605,11 +606,29 @@ router.patch("/:id/hard-password-reset", auth(["admin"]), async (req, res)=>{
       { transaction: t }
     );
     await user.update(
-       { password: hashedPassword },
+       { password: hashedPassword,must_change_password:1 },
       { transaction: t }
     )
 
    await t.commit()
+
+   const { text, html } = hardPasswordResetTemplate(franchise, password);
+    // Send email after commit
+
+    try {
+      await sendEmail(
+        franchise.email,
+        "Franchise Credentials – changed",
+        text,
+        html
+      );
+    } catch (emailError) {
+      console.error("Email sending failed:", emailError);
+      return sendResponse(res, {
+        status: 200,
+        message: "Franchise password reseted but failed to send email. Please contact support.",
+      });
+    }
 
     return sendResponse(res, {
       status: 200,

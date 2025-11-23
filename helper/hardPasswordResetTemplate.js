@@ -1,9 +1,9 @@
-
+// resetPassword.js
 module.exports = (franchise, tempPassword) => {
   const textMessage  =`
 Hello ${franchise.name},
 
-Your franchise application has been approved!
+Your franchise login password has been changend!
 
 You can now log in using:
 
@@ -32,7 +32,7 @@ Admin
             
             <!-- Header with Logo -->
             <tr>
-                <td style="background:#fff; padding:20px; text-align:center;">
+              <td style="background:#fff; padding:20px; text-align:center;">
                 <img src="https://eonestep.netlify.app/assets/logo-CPHpHGxE.png" alt="EoneStep" width="120" style="display:block; margin:0 auto;" />
                 <h1>Eonestep Academy</h1>
               </td>
@@ -43,7 +43,7 @@ Admin
             <tr>
               <td style="padding:30px; color:#333;">
                 <h2 style="margin-top:0; color:#007bff;">Hello ${franchise.name},</h2>
-                <p>Your franchise application <br/>has been approved!</b>.</p>
+                <p>Your franchise <br/>login password has been changend!</b>.</p>
                 <p>You can now log in using:</p>
                 <p><b>Email:</b> ${franchise.email}<br/>
                 <b>Temporary Password:</b> ${tempPassword}</p>

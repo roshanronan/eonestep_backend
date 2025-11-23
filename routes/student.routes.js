@@ -662,7 +662,8 @@ router.post("/certificate", async (req, res) => {
         [col("Courses.grade"), "grade"],
         [col("Courses.courseName"), "courseName"],
         [col("Courses.percentage"), "percentage"],
-        [col("Courses.courseDuration"), "courseDuration"]
+        [col("Courses.courseDuration"), "courseDuration"],
+        [col("Courses.subjects"),"subjects"]
       ],
       include: [
         {
@@ -681,11 +682,11 @@ router.post("/certificate", async (req, res) => {
     }
 
     if(student.status === 'active'){
-      return sendResponse(res, { status: 400, message: 'Student certificate can not be created before result.' });
+      return sendResponse(res, { status: 400, message: 'Student result awaited.' });
     }
 
      if(student.status === 'requested'){
-      return sendResponse(res, { status: 400, message: 'Student certificate is under process.' });
+      return sendResponse(res, { status: 400, message: 'Student result is under process.' });
     }
 
     sendResponse(res, { status: 200, data: { student } });
