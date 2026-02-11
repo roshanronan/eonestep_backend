@@ -836,6 +836,12 @@ router.delete('/:studentId', auth(['franchise', 'admin']), async (req, res) => {
       return sendResponse(res, { status: 403, message: 'Access denied' });
     }
     
+    // Delete related courses first
+    await Course.destroy({
+      where: { studentId: studentId }
+    });
+    
+    // Then delete the student
     await student.destroy();
     sendResponse(res, { status: 200, message: 'Student deleted successfully' });
   } catch (error) {
