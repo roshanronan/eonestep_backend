@@ -92,6 +92,7 @@ router.get('/', auth(['franchise']), async (req, res) => {
         where: {
           franchise_id: req.user.franchiseId
         },
+        order: [['createdAt', 'DESC']] 
         // include: db.Course // optional: include course details if using course_id
       });
   
@@ -793,5 +794,54 @@ router.put("/certificate-request/:id",auth(['admin','franchise']),async(req,res)
   }
 }
 )
+
+/**
+ * @swagger
+ * /api/students/{studentId}:
+ *   delete:
+ *     summary: Delete a student (franchise/admin)
+ *     tags: [Students]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: studentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The student ID to delete
+ *     responses:
+ *       200:
+ *         description: Student deleted successfully
+ *       403:
+ *         description: Access denied
+ *       404:
+ *         description: Student not found
+ *       500:
+ *         description: Server error
+ */
+// ✅ DELETE /api/students/:studentId — Delete a student (franchise/admin)
+router.delete('/:studentId', auth(['franchise', 'admin']), async (req, res) => {
+  const { studentId } = req.params;
+  
+  try {
+    const student = await Student.findByPk(studentId);
+    
+    if (!student) {
+      return sendResponse(res, { status: 404, message: 'Student not found' });
+    }
+    
+    // If franchise, ensure they own the student
+    if (req.user.role === 'franchise' && student.franchise_id !== req.user.franchiseId) {
+      return sendResponse(res, { status: 403, message: 'Access denied' });
+    }
+    
+    await student.destroy();
+    sendResponse(res, { status: 200, message: 'Student deleted successfully' });
+  } catch (error) {
+    console.error('Delete Student Error:', error);
+    sendResponse(res, { status: 500, message: 'Server error' });
+  }
+});
 
 module.exports = router;
